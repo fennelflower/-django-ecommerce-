@@ -7,6 +7,8 @@ from django.views.decorators.http import require_POST
 from django.core.mail import send_mail
 from django.conf import settings
 from .forms import EmailValidationForm
+from django.db.models import Sum, Count
+from django.contrib.admin.views.decorators import staff_member_required
 
 def product_list(request):
     # 1. 从数据库读取所有商品
@@ -193,3 +195,29 @@ def order_history(request):
     # 查询当前用户的所有订单，按时间倒序排列(最新的在前面)
     orders = Order.objects.filter(user=request.user).order_by('-created_at')
     return render(request, 'shop/order_history.html', {'orders': orders})
+
+
+@staff_member_required # 只有管理员(员工)才能看，普通用户看不了
+def sales_dashboard(request):
+    # 1. 计算总销售额 (只算已支付的)
+    # aggregate 会返回一个字典: {'total_price__sum': 12345.00}
+    revenue_data = Order.objects.filter(status='paid').aggregate(Sum('total_price'))
+    total_revenue = revenue_data['total_price__sum'] or 0
+    
+    # 2. 计算总订单数 (只算已支付的)
+    total_orders = Order.objects.filter(status='paid').count()
+    
+    # 3. 热销商品排行 (稍微复杂一点的高级查询)
+    # 逻辑：从 OrderItem 表查，按商品分组，把数量加起来，然后倒序排列，取前 5 名
+    hot_products = OrderItem.objects.filter(order__status='paid') \
+        .values('product__name') \
+        .annotate(total_sold=Sum('quantity')) \
+        .order_by('-total_sold')[:5]
+        
+    context = {
+        'total_revenue': total_revenue,
+        'total_orders': total_orders,
+        'hot_products': hot_products,
+    }
+    
+    return render(request, 'shop/sales_dashboard.html', context)

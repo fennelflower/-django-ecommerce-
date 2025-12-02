@@ -42,4 +42,7 @@ urlpatterns = [
 
     # 订单历史路由
     path('my-orders/', views.order_history, name='order_history'),
+
+    # 销售报表页面
+    path('dashboard/', views.sales_dashboard, name='sales_dashboard'),
 ]

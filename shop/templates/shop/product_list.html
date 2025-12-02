@@ -29,6 +29,7 @@
                         <a class="nav-link" href="{% url 'register' %}">注册</a>
                     {% endif %}
                     {% if user.is_staff %}
+                        <a class="nav-link text-info" href="{% url 'sales_dashboard' %}">📊 销售报表</a>
                         <a class="nav-link" href="/admin">管理员后台</a>
                     {% endif %}
                 </div>
